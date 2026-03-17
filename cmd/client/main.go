@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"io"
 	"log"
 	"time"
@@ -9,12 +10,21 @@ import (
 	pb "event-streamer/provider"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 func main() {
-	// Connect to the Load Balancer address (e.g., "localhost:50051" or "lb.example.com:80")
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false,
+		RootCAs:            nil,
+	}
+	creds := credentials.NewTLS(tlsConfig)
+
+	conn, err := grpc.NewClient("eberl.se:5000", grpc.WithTransportCredentials(creds))
+
+	// the following works with service tcp 5000 -> 30009 but errors once switched to https
+	// conn, err := grpc.NewClient("eberl.se:5000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -47,7 +57,7 @@ func main() {
 	defer ticker.Stop()
 
 	log.Println("Starting stream...")
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-ticker.C
 		msg := "Ping"
 		if err := stream.Send(&pb.DataChunk{Content: msg}); err != nil {
