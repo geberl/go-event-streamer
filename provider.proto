@@ -8,6 +8,9 @@ message DataChunk {
 }
 
 service Streamer {
-  // Bidirectional stream: sends a string, gets a string back.
+  // Unary (Synchronous) call
+  rpc GetStatus(DataChunk) returns (DataChunk);
+
+  // Bidirectional stream
   rpc EchoStream(stream DataChunk) returns (stream DataChunk);
 }

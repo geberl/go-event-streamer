@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Streamer_GetStatus_FullMethodName  = "/provider.Streamer/GetStatus"
 	Streamer_EchoStream_FullMethodName = "/provider.Streamer/EchoStream"
 )
 
@@ -26,7 +27,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StreamerClient interface {
-	// Bidirectional stream: sends a string, gets a string back.
+	// Unary (Synchronous) call
+	GetStatus(ctx context.Context, in *DataChunk, opts ...grpc.CallOption) (*DataChunk, error)
+	// Bidirectional stream
 	EchoStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DataChunk, DataChunk], error)
 }
 
@@ -36,6 +39,16 @@ type streamerClient struct {
 
 func NewStreamerClient(cc grpc.ClientConnInterface) StreamerClient {
 	return &streamerClient{cc}
+}
+
+func (c *streamerClient) GetStatus(ctx context.Context, in *DataChunk, opts ...grpc.CallOption) (*DataChunk, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DataChunk)
+	err := c.cc.Invoke(ctx, Streamer_GetStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *streamerClient) EchoStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[DataChunk, DataChunk], error) {
@@ -55,7 +68,9 @@ type Streamer_EchoStreamClient = grpc.BidiStreamingClient[DataChunk, DataChunk]
 // All implementations must embed UnimplementedStreamerServer
 // for forward compatibility.
 type StreamerServer interface {
-	// Bidirectional stream: sends a string, gets a string back.
+	// Unary (Synchronous) call
+	GetStatus(context.Context, *DataChunk) (*DataChunk, error)
+	// Bidirectional stream
 	EchoStream(grpc.BidiStreamingServer[DataChunk, DataChunk]) error
 	mustEmbedUnimplementedStreamerServer()
 }
@@ -67,6 +82,9 @@ type StreamerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStreamerServer struct{}
 
+func (UnimplementedStreamerServer) GetStatus(context.Context, *DataChunk) (*DataChunk, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStatus not implemented")
+}
 func (UnimplementedStreamerServer) EchoStream(grpc.BidiStreamingServer[DataChunk, DataChunk]) error {
 	return status.Error(codes.Unimplemented, "method EchoStream not implemented")
 }
@@ -91,6 +109,24 @@ func RegisterStreamerServer(s grpc.ServiceRegistrar, srv StreamerServer) {
 	s.RegisterService(&Streamer_ServiceDesc, srv)
 }
 
+func _Streamer_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DataChunk)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamerServer).GetStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Streamer_GetStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamerServer).GetStatus(ctx, req.(*DataChunk))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Streamer_EchoStream_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(StreamerServer).EchoStream(&grpc.GenericServerStream[DataChunk, DataChunk]{ServerStream: stream})
 }
@@ -104,7 +140,12 @@ type Streamer_EchoStreamServer = grpc.BidiStreamingServer[DataChunk, DataChunk]
 var Streamer_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "provider.Streamer",
 	HandlerType: (*StreamerServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetStatus",
+			Handler:    _Streamer_GetStatus_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "EchoStream",

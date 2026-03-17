@@ -8,4 +8,5 @@ protoc \
 
 go run ./cmd/server/...
 
-go run ./cmd/client/...
+go run ./cmd/client/... -mode stream
+go run ./cmd/client/... -mode unary

@@ -71,8 +71,9 @@ const file_provider_proto_rawDesc = "" +
 	"\n" +
 	"\x0eprovider.proto\x12\bprovider\"%\n" +
 	"\tDataChunk\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent2F\n" +
-	"\bStreamer\x12:\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent2}\n" +
+	"\bStreamer\x125\n" +
+	"\tGetStatus\x12\x13.provider.DataChunk\x1a\x13.provider.DataChunk\x12:\n" +
 	"\n" +
 	"EchoStream\x12\x13.provider.DataChunk\x1a\x13.provider.DataChunk(\x010\x01B\fZ\n" +
 	"./providerb\x06proto3"
@@ -94,10 +95,12 @@ var file_provider_proto_goTypes = []any{
 	(*DataChunk)(nil), // 0: provider.DataChunk
 }
 var file_provider_proto_depIdxs = []int32{
-	0, // 0: provider.Streamer.EchoStream:input_type -> provider.DataChunk
-	0, // 1: provider.Streamer.EchoStream:output_type -> provider.DataChunk
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: provider.Streamer.GetStatus:input_type -> provider.DataChunk
+	0, // 1: provider.Streamer.EchoStream:input_type -> provider.DataChunk
+	0, // 2: provider.Streamer.GetStatus:output_type -> provider.DataChunk
+	0, // 3: provider.Streamer.EchoStream:output_type -> provider.DataChunk
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

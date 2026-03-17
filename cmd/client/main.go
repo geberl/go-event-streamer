@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"io"
 	"log"
 	"time"
@@ -14,6 +15,9 @@ import (
 )
 
 func main() {
+	mode := flag.String("mode", "unary", "Execution mode: 'unary' or 'stream'")
+	flag.Parse()
+
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: false,
 		RootCAs:            nil,
@@ -31,6 +35,38 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewStreamerClient(conn)
+
+	switch *mode {
+	case "unary":
+		runUnary(client)
+	case "stream":
+		runStream(client)
+	default:
+		log.Fatalf("Unknown mode: %s. Use 'unary' or 'stream'.", *mode)
+	}
+}
+
+// runUnary calls the synchronous endpoint 5 times
+func runUnary(client pb.StreamerClient) {
+	log.Println("--- Starting Unary Calls ---")
+
+	for range 5 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		resp, err := client.GetStatus(ctx, &pb.DataChunk{Content: "Ping"})
+		if err != nil {
+			log.Printf("Unary call failed: %v", err)
+		} else {
+			log.Printf("Response: %s", resp.Content)
+		}
+		cancel()
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+// runStream opens a long-lived bidirectional stream
+func runStream(client pb.StreamerClient) {
+	log.Println("--- Starting Bidirectional Stream ---")
+
 	stream, err := client.EchoStream(context.Background())
 	if err != nil {
 		log.Fatalf("error opening stream: %v", err)
@@ -67,4 +103,5 @@ func main() {
 
 	stream.CloseSend()
 	<-waitc
+	log.Println("Stream closed.")
 }
