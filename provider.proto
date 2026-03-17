@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package provider;
+option go_package = "./provider";
+
+message DataChunk {
+  string content = 1;
+}
+
+service Streamer {
+  // Bidirectional stream: sends a string, gets a string back.
+  rpc EchoStream(stream DataChunk) returns (stream DataChunk);
+}
