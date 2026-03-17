@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 
 	pb "event-streamer/provider"
 
@@ -16,6 +18,12 @@ type server struct {
 
 func (s *server) EchoStream(stream pb.Streamer_EchoStreamServer) error {
 	log.Println("New stream connection established.")
+
+	hostname, ok := os.LookupEnv("EVENT_STREAMER_HOSTNAME")
+	if !ok {
+		hostname = "unknown"
+	}
+
 	for {
 		// Read incoming message from client
 		in, err := stream.Recv()
@@ -29,7 +37,7 @@ func (s *server) EchoStream(stream pb.Streamer_EchoStreamServer) error {
 		log.Printf("Received: %s", in.Content)
 
 		// Send response back
-		reply := "Server Echo: " + in.Content
+		reply := fmt.Sprintf("Server Echo from %s: %s", hostname, in.Content)
 		if err := stream.Send(&pb.DataChunk{Content: reply}); err != nil {
 			return err
 		}
