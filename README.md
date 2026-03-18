@@ -28,4 +28,7 @@ go run ./cmd/server/...
 ```sh
 go run ./cmd/client/... -mode stream
 go run ./cmd/client/... -mode unary
+
+grpcurl -insecure -plaintext=false example.com:5000 list
 ```
+
