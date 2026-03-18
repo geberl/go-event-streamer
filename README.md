@@ -1,6 +1,6 @@
 # go-event-streamer
 
-**
+*Minimal reproducer to debug a gRPC streaming API*
 
 ## Generate gRPC Client
 
