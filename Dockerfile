@@ -17,4 +17,5 @@ RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 COPY --from=builder /app/server.bin ./server
 EXPOSE 50051
+EXPOSE 50052
 ENTRYPOINT ["/app/server"]
