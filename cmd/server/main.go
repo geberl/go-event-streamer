@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
 )
 
 type server struct {
@@ -131,6 +132,7 @@ func main() {
 
 	s := grpc.NewServer(opts...)
 	pb.RegisterStreamerServer(s, &server{})
+	reflection.Register(s)
 
 	log.Println("Server listening on :50051 (Unary + Streaming) ...")
 	if err := s.Serve(lis); err != nil {
