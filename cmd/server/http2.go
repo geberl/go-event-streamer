@@ -19,46 +19,7 @@ func RunHTTP2Server(
 	addr string,
 	errChan chan<- error,
 ) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("Hello HTTP/2\n"))
-	})
-	mux.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			slog.InfoContext(ctx, "http2 client does not support streaming")
-			http.Error(w, "streaming unsupported", http.StatusInternalServerError)
-			return
-		}
-
-		slog.InfoContext(ctx, "http2 client connected", "proto", r.Proto)
-
-		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
-		ctx := r.Context()
-
-		for {
-			select {
-			case t := <-ticker.C:
-				_, err := fmt.Fprintf(w, "time: %s\n", t.Format(time.RFC3339Nano))
-				if err != nil {
-					slog.InfoContext(ctx, "http2 client disconnected")
-					return
-				}
-
-				flusher.Flush()
-
-			case <-ctx.Done():
-				slog.InfoContext(ctx, "http2 client cancelled request")
-				return
-			}
-		}
-	})
+	mux := makeMux(ctx)
 
 	go func() {
 		if os.Getenv("EVENT_STREAMER_USE_CERTS") != "" {
@@ -115,4 +76,52 @@ func RunHTTP2Server(
 			}
 		}
 	}()
+}
+
+func makeMux(ctx context.Context) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		slog.InfoContext(ctx, "http2 client connected", "endpoint", "/", "proto", r.Proto)
+		_, _ = w.Write([]byte("Hello HTTP/2\n"))
+	})
+
+	mux.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			slog.InfoContext(ctx, "http2 client does not support streaming")
+			http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+			return
+		}
+
+		slog.InfoContext(ctx, "http2 client connected", "endpoint", "/stream", "proto", r.Proto)
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		ctx := r.Context()
+
+		for {
+			select {
+			case t := <-ticker.C:
+				_, err := fmt.Fprintf(w, "time: %s\n", t.Format(time.RFC3339Nano))
+				if err != nil {
+					slog.InfoContext(ctx, "http2 client disconnected")
+					return
+				}
+
+				flusher.Flush()
+
+			case <-ctx.Done():
+				slog.InfoContext(ctx, "http2 client cancelled request")
+				return
+			}
+		}
+	})
+
+	return mux
 }
