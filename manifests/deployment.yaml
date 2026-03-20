@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-streamer
+  namespace: event-streamer
+  labels:
+    app.kubernetes.io/name: event-streamer
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: event-streamer
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: event-streamer
+    spec:
+      containers:
+        - name: server
+          image: ghcr.io/geberl/go-event-streamer:sha-4bf4fbe
+          env:
+            - name: EVENT_STREAMER_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: EVENT_STREAMER_USE_CERTS_INACTIVE
+              value: "true"
+          ports:
+            - name: http2-server
+              containerPort: 50051
+            - name: grpc-server
+              containerPort: 50052
+      imagePullSecrets:
+        - name: ghcr
