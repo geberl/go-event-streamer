@@ -36,7 +36,9 @@ grpcurl -insecure -plaintext=false example.com:5000 list
 ```sh
 # secure h2
 curl -H2 -k https://example.com:5001/
+curl -H2 -k https://example.com:50051/stream
 
 # insecure h2c
 curl --http2-prior-knowledge http://example.com:5001/
+curl --http2-prior-knowledge http://example.com:50051/stream
 ```

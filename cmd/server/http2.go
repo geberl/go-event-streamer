@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -20,6 +22,42 @@ func RunHTTP2Server(
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("Hello HTTP/2\n"))
+	})
+	mux.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			slog.InfoContext(ctx, "http2 client does not support streaming")
+			http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+			return
+		}
+
+		slog.InfoContext(ctx, "http2 client connected", "proto", r.Proto)
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		ctx := r.Context()
+
+		for {
+			select {
+			case t := <-ticker.C:
+				_, err := fmt.Fprintf(w, "time: %s\n", t.Format(time.RFC3339Nano))
+				if err != nil {
+					slog.InfoContext(ctx, "http2 client disconnected")
+					return
+				}
+
+				flusher.Flush()
+
+			case <-ctx.Done():
+				slog.InfoContext(ctx, "http2 client cancelled request")
+				return
+			}
+		}
 	})
 
 	go func() {
